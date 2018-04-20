@@ -61,11 +61,17 @@ $ vim /etc/nginx/nginx.conf
 ```
 
 ## 自动更新脚本
-``` base
 auto_deploy.sh
-
+``` bash
 $ cd /root/VPS/
 $ git pull
 $ cd /root/VPS/blog
 $ hexo generate
+```
+
+设定定时任务
+``` bash
+crontab -e
+
+*/1 * * * * /usr/bash /root/VPS/blog/auto_deploy.sh
 ```
