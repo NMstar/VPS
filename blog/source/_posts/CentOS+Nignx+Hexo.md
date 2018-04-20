@@ -22,7 +22,7 @@ $ curl --silent --location https://rpm.nodesource.com/setup_9.x | sudo bash -
 $ yum -y install nodejs
 ```
 
-下载Xeon
+下载Xeon (和blog同目录)
 ``` bash 
 $ npm install xeon
 ```
