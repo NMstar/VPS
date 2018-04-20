@@ -73,3 +73,6 @@ crontab -e
 
 */1 * * * * /bin/bash /root/VPS/blog/auto_deploy.sh
 ```
+
+## 更新主题为next
+> https://github.com/iissnan/hexo-theme-next
