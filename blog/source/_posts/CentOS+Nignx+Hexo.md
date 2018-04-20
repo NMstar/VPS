@@ -18,7 +18,7 @@ $ git clone https://github.com/NMstar/VPS.git
 ## Hexo
 安装NodeJS
 ``` bash
-$ curl --silent --location https://rpm.nodesource.com/setup_9.x | sudo bash -
+$ curl --silent --location https://rpm.nodesource.com/setup_8.x | sudo bash -
 $ yum -y install nodejs
 ```
 
