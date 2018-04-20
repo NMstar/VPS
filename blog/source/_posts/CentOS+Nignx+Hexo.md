@@ -76,3 +76,8 @@ crontab -e
 
 ## 更新主题为next
 > https://github.com/iissnan/hexo-theme-next
+
+Git命令
+``` bash
+$ git clone --branch v5.1.2 https://github.com/iissnan/hexo-theme-next themes/next
+```
