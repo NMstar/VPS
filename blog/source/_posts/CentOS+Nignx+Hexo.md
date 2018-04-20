@@ -1,8 +1,6 @@
 ---
-title: CentOS + Nginx + Hexo
+title: CentOS + Nginx + Git + Hexo 建立自己的博客
 ---
-
-# CentOS + Nginx + Git + Hexo 建立自己的博客
 
 ## Vultr.com 购买服务器
 
@@ -63,3 +61,11 @@ $ vim /etc/nginx/nginx.conf
 ```
 
 ## 自动更新脚本
+``` base
+auto_deploy.sh
+
+$ cd /root/VPS/
+$ git pull
+$ cd /root/VPS/blog
+$ hexo generate
+```
