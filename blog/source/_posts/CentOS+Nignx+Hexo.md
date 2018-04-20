@@ -2,9 +2,7 @@
 title: CentOS + Nginx + Git + Hexo 建立自己的博客
 ---
 
-## Vultr.com 购买服务器
-
-略过
+## vultr.com 购买服务器
 
 ## Git 安装配置
 安装Git
@@ -73,5 +71,5 @@ $ hexo generate
 ``` bash
 crontab -e
 
-*/1 * * * * /usr/bash /root/VPS/blog/auto_deploy.sh
+*/1 * * * * /bin/bash /root/VPS/blog/auto_deploy.sh
 ```
