@@ -1,4 +1,4 @@
-cd /root/VPS
+cd ~/VPS
 git pull
-cd /root/VPS/blog
+cd ~/VPS/blog
 hexo generate
