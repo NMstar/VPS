@@ -4,4 +4,4 @@
 
 #### Ubuntu And CentOS
 
-Nginx + Hexo
+Nginx + Hexo + Git

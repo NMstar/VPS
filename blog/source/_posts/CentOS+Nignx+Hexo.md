@@ -1,5 +1,7 @@
 ---
 title: CentOS + Nginx + Git + Hexo 建立自己的博客
+date: 2018/4/20
+tags: [CentOS, Nginx, Git, Hexo]
 ---
 
 ## vultr.com 购买服务器
@@ -17,6 +19,7 @@ $ git clone https://github.com/NMstar/VPS.git
 
 ## Hexo
 安装NodeJS
+
 ``` bash
 $ curl --silent --location https://rpm.nodesource.com/setup_8.x | sudo bash -
 $ yum -y install nodejs
