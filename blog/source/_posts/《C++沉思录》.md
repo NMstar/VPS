@@ -1,6 +1,6 @@
 ---
 title: C++ 沉思录阅读笔记
-date: 2018/4/20
+date: 2018/5/4
 tags: [C++]
 ---
 
@@ -168,6 +168,164 @@ String& String::operator=(const String& s) {
 #### 删除数组记得使用 delete[]
 #### 适当地声明成员函数为const
 
+### 代理类
+代理类的好处是不用显式来管理内存
+#### Vehicle基类定义
+``` c++
+class Vehicle {
+public:
+    virtual double weight() const = 0;
+    virtual void start() = 0;
+    // ...
+};
+class RoadVehicle: public Vehicle {/* .. */};
+class AutoVehicle: public RoadVehicle {/* .. */};
+class Aircraft: public Vehicle {/* .. */};
+class Helicopter: public Aircraft {/* .. */};
+```
+目的是跟踪处理一系列不同的 `Vehicle` 
+``` c++
+    // 错误的，因为Vehicle是一个抽象基类
+    Vehicle parking_lot[1000];
+```
+#### 经典做法
+``` c++
+    Vehicle* parking_lot[1000]; // 指针数组
+    // 输入
+    Automobile x = /* ... */;
+    parking_lot[num_vehicles++] = &x;
+    // 这个做法的问题：
+    // 如果x变量没有了，parking_lot的指针就不知道指向什么内容了。
+```
+#### 变通的做法
+``` c++
+    Automobile x = /* ... */;
+    parking_lot[num_vehicles++] = new Automobile(x);
+    // 这个做法的问题：
+    // 1. 需要动态管理内存
+    // 2. 只能绑定静态的对象
+
+```
+#### 虚复制函数
+``` c++
+// 想要能够复制任何类型的Vehicle，需要给Vehicle类中添加一个合适的虚函数
+    virtual Vehicle* copy() cosnt = 0;
+
+// 如果Truck继承自类Vehicle,那么它的copy函数就类似于：
+Vehicle* Truck::copy() const {
+    return new Truck(*this);
+};
+```
+#### 定义代理类
+``` c++
+class VehicleSurrogate {
+public:
+    VehicleSurrogate();
+    VehicleSurrogate(const Vehicle&);
+    ~VehicleSurrogate();
+    VehicleSurrogate(const VehicleSurrogate&);
+    VehicleSurrogate& operator=(const VehicleSurrogate&);
+private:
+    Vehicle* vp;
+};
+
+VehicleSurrogate::VehicleSurrogate(): vp(0) { }
+VehicleSurrogate::VehicleSurrogate(const Vehicle& v): vp(v.copy()) {}
+VehicleSurrogate::~VehicleSurrogate() {
+    delete vp;
+}
+VehicleSurrogate::VehicleSurrogate(const VehicleSurrogate& v): vp(v.vp? v.vp->copy(): 0) { }
+VehicleSurrogate::operator=(const VehicleSurrogate& v) {
+    if(this != &v) {
+        delete vp;
+        vp = (v.vp ? v.vp->copy() : 0);
+    }
+    return *this;
+}
+```
+令代理类支持类 `Vehicle` 所能支持的操作
+``` c++
+class VehicleSurrogate {
+public:
+    VehicleSurrogate();
+    VehicleSurrogate(const Vehicle&);
+    ~VehicleSurrogate();
+    VehicleSurrogate(const VehicleSurrogate&);
+    VehicleSurrogate& operator=(const VehicleSurrogate&);
+    // 来自Vehicle的操作
+    double weight() const;
+    void start();
+private:
+    Vehicle* vp;
+};
+
+double VehicleSurrogate::weight() const {
+    if(vp == 0) 
+        throw "empty weigth";
+    return vp->weight();
+}
+
+void VehicleSurrogate::start() {
+    if(vp == 0)
+        throw "empty start";
+    vp->start();
+}
+```
+代理类的做法
+``` c++
+    VehicleSurrogate parking_lot[1000];
+    Automobile x;
+    parking_lot[num_vehicles++] = x;
+    // 最后一句等价于
+    parking_lot[num_vehicles++] = VehicleSurrogate(X);
+```
+
 ### C++ 基础知识
 
 类成员函数定义为const时，不允许修改类的数据成员
+
+构造函数的调用细节:
+
+``` c++
+#include <iostream> 
+using namespace std;
+
+class Test {
+public:
+    Test();
+    Test(const Test& t);
+    Test& operator=(const Test& t);
+
+private:
+    int t1;
+};
+
+Test::Test() {
+    cout<<"调用构造函数"<<endl;
+}
+
+Test::Test(const Test& t) {
+    cout<<"调用复制构造函数"<<endl;
+}
+
+Test& Test::operator =(const Test& t) {
+    cout<<"调用赋值构造函数"<<endl;
+    t1 = t.t1;
+    return *this;
+}
+
+int main() {
+    Test t1;
+    Test t2 = t1;
+    Test t3;
+    t3 = t1;
+    return 0;
+}
+
+/* 运行结果：
+    调用构造函数
+    调用复制构造函数
+    调用构造函数
+    调用赋值构造函数 
+*/
+```
