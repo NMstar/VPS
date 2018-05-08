@@ -6,7 +6,7 @@ tags: [C++]
 
 作者: [美]Andrew Konnig  Barbara Moo
 
-### 序幕
+## 序幕
 
     在C中扩展代码要比C++中难，因为在状态转移的过程中需要很多状态，C需要把这些状态保存在局部，C++可以直接保存到类里。
 
@@ -24,7 +24,7 @@ tags: [C++]
 
     继承是一种抽象，它允许程序员在某些时候忽略相似对象间的差异，又在其他时候利用这些差异。
 
-### 类设计的核查表
+## 第四章 类设计的核查表
 
 #### 数据成员是否是私有的？
 用户可能直接修改成员
@@ -168,7 +168,7 @@ String& String::operator=(const String& s) {
 #### 删除数组记得使用 delete[]
 #### 适当地声明成员函数为const
 
-### 代理类
+## 第五章 代理类
 代理类的好处是不用显式来管理内存
 #### Vehicle基类定义
 ``` c++
@@ -278,6 +278,144 @@ void VehicleSurrogate::start() {
     parking_lot[num_vehicles++] = x;
     // 最后一句等价于
     parking_lot[num_vehicles++] = VehicleSurrogate(X);
+```
+
+## 第六章 句柄：第一部分
+#### 引用计数型句柄
+``` c++
+class Point {
+public:
+    Point(): xval(0), yval(0) { }
+    Point(int x, int y): xval(x), yval(y) { }
+    int x() const { return xval; }
+    int y() const { return yval; }
+    Point& x(int xv) { xval = xv; return *this; }
+    Point& y(int yv) { yval = yv; return *this; }
+private:
+    int xval, yval;
+};
+
+class UPoint {
+    // 所有成员都是私有的
+    friend class Handle
+    Point p;
+    // 引用计数标志
+    int u;
+
+    UPoint()： u(1) {}
+    UPoint(int x, int y): p(x, y), u(1) {}
+    UPoint(const Point &p0): p(p0), u(1) {}
+};
+
+class Handle {
+public:
+    Handle();
+    Handle(int, int);
+    Handle(const Point&);
+    Handle(const Handle&);
+    Handle& operator=(const Handle&);
+    ~Handle();
+    int x() const;
+    Handle& x(int);
+    int y() const;
+    Handle& y(int);
+private:
+    UPoint* up;
+};
+
+Handle::Handle(): up(new UPoint()) {}
+
+Handle::Handle(int x, int y): up(new UPoint(x,y)) {}
+
+Handle::Handle(const Point& p): up(new UPoint(p)) {}
+
+// 析构函数,在删除最后一个引用的时候删除up
+Handle::~Handle() {
+    if(--up->u == 0) 
+        delete up;
+}
+
+// 复制构造函数
+Handle::Handle(const Handle& h): up(h.up) { ++up->u; }
+
+// 赋值操作符
+Handle& Handle::operator=(const Handle& h) {
+    ++h.up->u;
+    if(--up->u == 0) 
+        delete up;
+    up = h.up;
+    return *this;
+}
+
+// 读取操作
+int Handle::x() const {
+    return up->p.x();
+}
+
+int Handle::y() const {
+    return up->p.y();
+}
+```
+#### 写时复制 (copy on write)
+``` c++
+    Handle h(3,4);
+    Handle h2 = h;
+    h2.x(5);
+    int n = h.x();`
+```
+在指针的语义下，`n == 5`。<br>
+在值的语义下，`n == 3`。<br>
+
+有时候我们需要值的语义，所以产生了写时复制(copy on write)的技术，优点是只有在绝对必要的时候才进行复制，从而避免了不必要的复制。
+
+1. 指针语义
+``` c++
+Handle& Handle::x(int x0) {
+    up->p.x(x0);
+    return *this;
+}
+
+Handle& Handle::y(int y0) {
+    up->p.y(y0);
+    return *this;
+}
+``` 
+2. 值语义
+``` c++
+Handle& Handle::x(int x0) {
+    if (up->u != 1) {
+        --up->u;
+        up = new UPoint(up->p);
+    }
+    up->p.x(x0);
+    return *this;
+}
+
+Handle& Handle::y(int y0) {
+    if (up->u != 1) {
+        --up->u;
+        up = new UPoint(up->p);
+    }
+    up->p.y(y0);
+    return *this;
+}
+
+// 可以看到上述函数有一部分是重复的，而且会在任何改变UPoint对象的成员函数中重复。所以可以写一个private函数。
+
+// 恕我起不出好名字 
+void Handle::OneCounter() {
+    if (up->u != 1) {
+        --up->u;
+        up = new UPoint(up->p);
+    }
+}
+``` 
+``` c++
+// 在值语义下：
+    p.x(42);
+// 相当于
+    p = Point(42,p.y());
+// 区别是: 后者在有很多数据成员的情况下会产生更大代价
 ```
 
 ### C++ 基础知识
