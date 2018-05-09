@@ -418,11 +418,148 @@ void Handle::OneCounter() {
 // 区别是: 后者在有很多数据成员的情况下会产生更大代价
 ```
 
+### 第七章 句柄：第二部分
+#### 分离引用计数
+``` c++
+class Handle {
+public:
+    // 
+private:
+    Point* p;
+    int* u;    // 指向引用计数的指针
+};
+
+Handle::Handle(): u(new int(1)), p(new Point()) {}
+Handle::Handle(int x, int y): u(new int(1)), p(new Point(x,y)) {}
+Handle::Handle(const Point& p0): u(new int(1)), p(new Point(p0)) {}
+
+Handle::Handle(const Handle& h): u(h.u), p(h.p) { ++*u; }
+
+Handle& operator=(const Handle& h) {
+    ++*h.u;
+    if(--*u == 0) {
+        delete u;
+        delete p;
+    }
+    u = h.u;
+    p = h.p;
+    return *this;
+}
+
+Handle::~Handle() {
+    if(--*u == 0) {
+        delete u;
+        delete p;
+    }
+}
+```
+#### 对引用计数的抽象
+``` c++
+class UseCount {
+public:
+    UseCount();
+    UseCount(const UseCount&);
+    UseCount& operator=(const UseCount&);
+    ~UseCount();
+    // ...
+private:
+    int *p;
+}
+
+UseCount::UseCount(): p(new int(1));
+UseCount::UseCount(const UseCount& u): p(u.p) {++*p;}
+UseCount::~UseCount() {if(--*p == 0) delete p;}
+
+class Handle {
+public:
+    // ...
+private:
+    Point* p;
+    UseCount u;
+};
+// 由于构造函数可以依赖缺省 UseCount 构造函数的行为，所以变得更简单了。
+
+Handle::Handle(): p(new Point()) {}
+Handle::Handle(int x, int y): p(new Point(x,y)) {}
+Handle::Handle(const Point& p0): p(new Point(p0)) {}
+
+Handle::Handle(const Handle& h): u(h.u), p(h.p) {}
+
+class UseCount {
+    // ...
+public:
+    bool only();
+};
+
+bool UseCount::only() {return *p == 1;}
+
+// 这里的一个细节是UseCount是一个实体，不是指针。在执行完~Handle()之后会执行~UseCount析构函数。
+Handle::~Handle() {
+    if(u.only())
+        delete p;
+}
+
+// 句柄的赋值
+class UseCount {
+    // ...
+public:
+    bool reattach(const UseCount&);
+private:
+    // 不考虑UseCount的赋值操作
+    UseCount& operator=(const UseCount&);
+};
+
+bool UseCount::reattach(const UseCount& u) {
+    ++*u.p;
+    if(--*p == 0) {
+        delete p;
+        p = u.p;
+        return true;
+    }
+    p = u.p;
+    return false;
+}
+
+Handle& Handle::operator=(const Handle& h) {
+    if(u.reattach(h.u))
+        delete p;
+    p = h.p;
+    return *this;
+}
+```
+#### 写时复制
+``` c++
+class UseCount {
+    // ...
+public:
+    bool makeonly();
+};
+
+bool UseCount::makeonly() {
+    if(*p == 1) 
+        return false;
+    -- *p;
+    p = new int(1);
+    return true;
+}
+
+int Handle::x() const {
+    return p->x();
+}
+
+Handle& Handle::x(int x0) {
+    if(u.makeonly())
+        p = new Point(*p);
+    p->x(x0);
+    return *this;
+}
+```
+
 ### C++ 基础知识
 
-类成员函数定义为const时，不允许修改类的数据成员
+#### 类成员函数定义为const时，不允许修改类的数据成员
 
-构造函数的调用细节:
+#### 构造函数的调用细节:
 
 ``` c++
 #include <iostream> 
@@ -467,3 +604,6 @@ int main() {
     调用赋值构造函数 
 */
 ```
+#### 构造函数中 : 和 = 的区别
+- : 调用的是复制构造函数
+- = 调用的是赋值构造函数
